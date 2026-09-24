@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>secure-context check</title>
+  <!-- Проверка работы в небезопасном контексте (http:// не на localhost): нет crypto.randomUUID / crypto.subtle.
+       Открывается раннером tools/secure-context-check.sh по LAN-адресу. Итог — JSON в document.title
+       («RESULT {…}»), переход на oauth.yandex.ru перехватывается и не выполняется. -->
+  <script type="module" src="secure-context.js"></script>
+</head>
+<body></body>
+</html>

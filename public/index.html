@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#4f46e5">
+  <meta name="description" content="One-line notes with tags" data-i18n-content="app.description">
+  <title>Notes</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="css/app.css">
+  <script type="module" src="js/app.js"></script>
+</head>
+<body>
+  <!-- Тексты по умолчанию — английские (fallback); переводятся по data-i18n* в js/i18n.js -->
+  <header class="topbar">
+    <h1 class="topbar__title" data-i18n="app.title">Notes</h1>
+    <span id="sync-status" class="sync-status" role="status" aria-live="polite"></span>
+    <button id="settings-btn" class="icon-btn" type="button" aria-label="Settings" title="Settings"
+            data-i18n-aria-label="settings.title" data-i18n-title="settings.title">
+      <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false">
+        <path fill="currentColor" d="M19.14 12.94a7.4 7.4 0 0 0 .05-.94 7.4 7.4 0 0 0-.05-.94l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.61-.22l-2.39.96a7 7 0 0 0-1.62-.94l-.36-2.54a.5.5 0 0 0-.5-.42h-3.84a.5.5 0 0 0-.5.42l-.36 2.54a7.3 7.3 0 0 0-1.62.94l-2.39-.96a.5.5 0 0 0-.61.22L2.71 8.84a.5.5 0 0 0 .12.64l2.03 1.58a7.4 7.4 0 0 0 0 1.88l-2.03 1.58a.5.5 0 0 0-.12.64l1.92 3.32a.5.5 0 0 0 .61.22l2.39-.96c.5.38 1.04.7 1.62.94l.36 2.54a.5.5 0 0 0 .5.42h3.84a.5.5 0 0 0 .5-.42l.36-2.54a7.3 7.3 0 0 0 1.62-.94l2.39.96a.5.5 0 0 0 .61-.22l1.92-3.32a.5.5 0 0 0-.12-.64zM12 15.5A3.5 3.5 0 1 1 12 8.5a3.5 3.5 0 0 1 0 7z"/>
+      </svg>
+    </button>
+  </header>
+
+  <main class="container">
+    <form id="note-form" class="note-form" autocomplete="off">
+      <div class="note-form__row">
+        <!-- textarea, а не input: длинная строка переносится и видна целиком. Заметка остаётся однострочной:
+             Enter сохраняет, переводы строк при вставке заменяются пробелами; высота подстраивается под текст (app.js). -->
+        <textarea id="note-text" class="input input--autogrow" rows="1" maxlength="500" required
+                  enterkeyhint="send" placeholder="New note…" data-i18n-placeholder="note.placeholder"
+                  aria-label="Note text" data-i18n-aria-label="note.textLabel"></textarea>
+        <button id="note-submit" class="round-btn" type="submit"
+                aria-label="Add" title="Add" data-i18n-aria-label="note.add" data-i18n-title="note.add">
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false">
+            <path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+                  d="M12 19V5M5 12l7-7 7 7"/>
+          </svg>
+        </button>
+      </div>
+      <!-- Выбранные теги одновременно прикрепляются к новой заметке и фильтруют список (все сразу). -->
+      <div id="tag-picker" class="tags" role="group" aria-label="Note tags" data-i18n-aria-label="note.tagsLabel">
+        <button id="add-tag-btn" class="chip chip--add" type="button"
+                title="New tag" data-i18n-title="tag.new" data-i18n="tag.add">＋ tag</button>
+        <input id="new-tag-input" class="chip chip--input" type="text" maxlength="32" hidden
+               placeholder="tag name" data-i18n-placeholder="tag.namePlaceholder"
+               aria-label="New tag name" data-i18n-aria-label="tag.nameLabel">
+        <button id="clear-tags-btn" class="chip chip--clear" type="button" hidden
+                title="Clear selected tags and filter" data-i18n-title="filter.clearTitle" data-i18n="filter.clear">✕ clear</button>
+      </div>
+    </form>
+
+    <section id="notes-list" class="notes" aria-live="polite"></section>
+  </main>
+
+  <dialog id="settings-dialog" class="dialog">
+    <form id="settings-form" method="dialog" class="settings">
+      <header class="dialog__header">
+        <h2 data-i18n="settings.title">Settings</h2>
+        <button class="icon-btn" value="close" aria-label="Close" data-i18n-aria-label="settings.close">✕</button>
+      </header>
+
+      <fieldset class="settings__providers">
+        <legend data-i18n="settings.storage">Where to store notes</legend>
+        <label><input type="radio" name="provider" value="none"> <span data-i18n="provider.none">Only on this device</span></label>
+        <label><input type="radio" name="provider" value="s3"> <span data-i18n="provider.s3">S3 storage</span></label>
+        <label><input type="radio" name="provider" value="yandex"> <span data-i18n="provider.yandex">Yandex Disk</span></label>
+        <label><input type="radio" name="provider" value="gdrive"> <span data-i18n="provider.gdrive">Google Drive</span></label>
+        <label><input type="radio" name="provider" value="registration"> <span data-i18n="provider.registration">Registration</span></label>
+      </fieldset>
+
+      <fieldset class="settings__panel" data-provider="s3">
+        <legend>S3</legend>
+        <label><span data-i18n="s3.endpoint">Endpoint</span> <input class="input" name="s3.endpoint" type="url" placeholder="https://storage.yandexcloud.net"></label>
+        <label><span data-i18n="s3.region">Region</span> <input class="input" name="s3.region" placeholder="ru-central1"></label>
+        <label><span data-i18n="s3.bucket">Bucket</span> <input class="input" name="s3.bucket"></label>
+        <label><span data-i18n="s3.prefix">Prefix</span> <input class="input" name="s3.prefix" placeholder="notes/"></label>
+        <label><span data-i18n="s3.accessKeyId">Access Key ID</span> <input class="input" name="s3.accessKeyId" autocomplete="off"></label>
+        <label><span data-i18n="s3.secretAccessKey">Secret Access Key</span> <input class="input" name="s3.secretAccessKey" type="password" autocomplete="off"></label>
+        <label class="check"><input type="checkbox" name="s3.virtualHosted"> <span data-i18n="s3.virtualHosted">Bucket in subdomain (virtual-hosted)</span></label>
+        <label class="check"><input type="checkbox" name="s3.conditionalWrites"> <span data-i18n="s3.conditionalWrites">Conditional writes (If-Match), protects against races</span></label>
+        <p class="hint" data-i18n="s3.corsHint">The bucket needs CORS: GET and PUT methods, headers *, ExposeHeaders: ETag.</p>
+      </fieldset>
+
+      <fieldset class="settings__panel" data-provider="yandex">
+        <legend data-i18n="provider.yandex">Yandex Disk</legend>
+        <p class="auth-state" data-auth-state="yandex"></p>
+        <button class="btn" type="button" data-action="yandex-login" data-i18n="auth.yandexLogin">Sign in with Yandex</button>
+        <button class="btn btn--ghost" type="button" data-action="yandex-logout" data-i18n="auth.logout">Sign out</button>
+      </fieldset>
+
+      <fieldset class="settings__panel" data-provider="gdrive">
+        <legend data-i18n="provider.gdrive">Google Drive</legend>
+        <p class="auth-state" data-auth-state="gdrive"></p>
+        <button class="btn" type="button" data-action="gdrive-login" data-i18n="auth.googleLogin">Sign in with Google</button>
+        <button class="btn btn--ghost" type="button" data-action="gdrive-logout" data-i18n="auth.logout">Sign out</button>
+      </fieldset>
+
+      <fieldset class="settings__panel" data-provider="registration">
+        <legend data-i18n="provider.registration">Registration</legend>
+        <p class="auth-state" data-auth-state="registration"></p>
+        <p id="registration-hint" class="hint"></p>
+        <button class="btn" type="button" data-action="register" data-i18n="registration.register">Sign up</button>
+        <button class="btn btn--ghost" type="button" data-action="registration-reset" data-i18n="registration.reset">Reset</button>
+      </fieldset>
+
+      <p id="settings-sync-info" class="hint"></p>
+      <p id="settings-version" class="hint"></p>
+
+      <footer class="dialog__footer">
+        <button class="btn" type="button" data-action="sync-now" data-i18n="settings.syncNow">Sync now</button>
+        <button class="btn btn--primary" type="button" data-action="save" data-i18n="settings.save">Save</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" role="alert" hidden></div>
+
+  <div id="update-bar" class="update-bar" role="status" hidden>
+    <span id="update-text" data-i18n="update.available">A new version is available</span>
+    <button id="update-btn" class="btn btn--primary" type="button" data-i18n="update.apply">Update</button>
+  </div>
+
+  <template id="note-template">
+    <!-- Сетка: номер | текст | ✕ в первой строке, теги — под текстом. Время создания — в datetime и подсказке номера. -->
+    <li class="note">
+      <time class="note__num"></time>
+      <span class="note__text"></span>
+      <span class="note__tags"></span>
+      <button class="note__delete icon-btn" type="button" aria-label="Delete note" title="Delete"
+              data-i18n-aria-label="note.delete" data-i18n-title="note.deleteShort">✕</button>
+    </li>
+  </template>
+</body>
+</html>

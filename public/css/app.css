@@ -1,0 +1,252 @@
+:root {
+  --bg: #f6f7fb;
+  --surface: #fff;
+  --text: #1f2330;
+  --muted: #6b7280;
+  --border: #e3e5ec;
+  --primary: #4f46e5;
+  --primary-soft: #eef0ff;
+  --danger: #dc2626;
+  --radius: 10px;
+  --gap: 12px;
+  color-scheme: light dark;
+  font: 16px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14161c;
+    --surface: #1d2029;
+    --text: #e8eaf0;
+    --muted: #9aa1b1;
+    --border: #2c303c;
+    --primary: #818cf8;
+    --primary-soft: #262a45;
+  }
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* ---------- Шапка ---------- */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: var(--gap);
+  padding: calc(8px + env(safe-area-inset-top)) 16px 8px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.topbar__title { flex: 1; margin: 0; font-size: 1.2rem; }
+.sync-status { color: var(--muted); font-size: .8rem; }
+.sync-status--error { color: var(--danger); cursor: help; text-decoration: underline dotted; }
+
+.container { max-width: 720px; margin: 0 auto; padding: 16px; }
+
+/* ---------- Кнопки и поля ---------- */
+.btn, .icon-btn, .chip { font: inherit; color: inherit; cursor: pointer; }
+.btn {
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.btn--primary { background: var(--primary); border-color: var(--primary); color: #fff; }
+.btn--ghost { border-color: transparent; background: transparent; color: var(--muted); }
+.icon-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+}
+.icon-btn:hover { background: var(--primary-soft); }
+
+.input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: inherit;
+  font: inherit;
+}
+.input:focus, .chip--input:focus { outline: 2px solid var(--primary); outline-offset: -1px; }
+
+/* Поле, растущее вниз под текст: высоту выставляет app.js (autoGrow), ручное изменение размера не нужно.
+   После max-height появляется прокрутка, чтобы на мобильных поле не вытеснило список с экрана. */
+.input--autogrow {
+  display: block;
+  resize: none;
+  overflow-y: hidden;
+  max-height: 40vh;
+  line-height: inherit;
+  overflow-wrap: anywhere;
+}
+
+/* ---------- Форма ---------- */
+/* Без карточки (фона, рамки, внутреннего отступа): на мобильных важнее ширина. */
+.note-form {
+  display: grid;
+  gap: var(--gap);
+  margin-bottom: 16px;
+}
+/* Кнопка прижата к нижнему краю растущего поля — как в мессенджерах. */
+.note-form__row { display: flex; align-items: flex-end; gap: 8px; }
+
+/* Круглая кнопка отправки со стрелкой */
+.round-btn {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #fff;
+  cursor: pointer;
+  transition: transform .1s, opacity .15s;
+}
+.round-btn:hover { opacity: .9; }
+.round-btn:active { transform: scale(.94); }
+.round-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+/* ---------- Теги ---------- */
+.tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  padding: 3px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  font-size: .85rem;
+  line-height: 1.4;
+}
+.chip:hover { border-color: var(--primary); }
+.chip--active { background: var(--primary); border-color: var(--primary); color: #fff; }
+.chip--add { border-style: dashed; color: var(--primary); }
+.chip--clear { border-color: transparent; color: var(--muted); }
+.chip--input { width: 9em; background: var(--surface); cursor: text; }
+.chip--small { padding: 0 8px; font-size: .75rem; color: var(--primary); border-color: transparent; background: var(--primary-soft); }
+
+/* ---------- Список заметок ---------- */
+.notes {
+    margin-top: 3rem;
+}
+.day { margin-bottom: 20px; }
+.day__title { margin: 0 0 6px; font-size: .85rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }
+/* Без карточки: заметки разделены только линиями и выровнены по краю поля ввода. */
+.day__list { margin: 0; padding: 0; list-style: none; }
+
+/*
+ * Сетка заметки: «номер | текст | ✕», теги — второй строкой под текстом.
+ * Кнопка удаления всегда справа на уровне первой строки текста — не переносится на узких экранах.
+ * Отступы — маргинами у непустых элементов, а не gap: без номера и без тегов не остаётся пустых зазоров.
+ */
+.note {
+  --note-line: 1.4em;       /* высота строки текста (line-height в :root) */
+  --note-delete-size: 28px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    "num text del"
+    ".   tags .";
+  align-items: baseline;
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+}
+.note:first-child { border-top: 0; }
+.note__num {
+  grid-area: num;
+  min-width: 1.2em;
+  margin-right: 10px;
+  color: var(--muted);
+  font-size: .8rem;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.note__num:empty { display: none; }
+.note__text { grid-area: text; overflow-wrap: anywhere; }
+.note__tags { grid-area: tags; display: flex; flex-wrap: wrap; gap: 4px; }
+.note__tags:not(:empty) { margin-top: 4px; }
+.note__delete {
+  grid-area: del;
+  align-self: start;
+  width: var(--note-delete-size);
+  height: var(--note-delete-size);
+  /* центр кнопки — на середине первой строки текста */
+  margin: calc((var(--note-line) - var(--note-delete-size)) / 2) 0 0 8px;
+  color: var(--muted);
+  opacity: 0;
+}
+.note:hover .note__delete, .note__delete:focus-visible { opacity: 1; }
+@media (hover: none) { .note__delete { opacity: .6; } }
+
+.empty { text-align: center; color: var(--muted); padding: 40px 0; }
+
+/* ---------- Диалог настроек ---------- */
+.dialog {
+  width: min(480px, calc(100vw - 24px));
+  max-height: calc(100vh - 24px);
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+}
+.dialog::backdrop { background: rgb(0 0 0 / .4); }
+.settings { display: grid; gap: var(--gap); padding: 16px; }
+.dialog__header, .dialog__footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.dialog__header h2 { margin: 0; font-size: 1.1rem; }
+.dialog__footer { justify-content: flex-end; }
+.settings fieldset { display: grid; gap: 8px; margin: 0; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius); }
+.settings legend { padding: 0 4px; color: var(--muted); font-size: .85rem; }
+.settings label { display: grid; gap: 4px; font-size: .9rem; }
+.settings .settings__providers label, .settings label.check { display: flex; align-items: center; gap: 8px; }
+.hint { margin: 0; color: var(--muted); font-size: .8rem; }
+.auth-state { margin: 0; font-size: .9rem; }
+
+/* ---------- Полоса обновления ---------- */
+.update-bar {
+  position: fixed;
+  left: 50%;
+  top: calc(60px + env(safe-area-inset-top));
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: var(--gap);
+  max-width: calc(100vw - 32px);
+  padding: 8px 8px 8px 16px;
+  border: 1px solid var(--primary);
+  border-radius: var(--radius);
+  background: var(--primary-soft);
+  box-shadow: 0 4px 16px rgb(0 0 0 / .15);
+  z-index: 90;
+}
+
+/* ---------- Toast ---------- */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  max-width: calc(100vw - 32px);
+  padding: 10px 16px;
+  border-radius: var(--radius);
+  background: var(--text);
+  color: var(--bg);
+  box-shadow: 0 4px 16px rgb(0 0 0 / .2);
+  z-index: 100;
+}
