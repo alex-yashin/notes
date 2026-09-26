@@ -7,7 +7,7 @@ export const CONFIG = Object.freeze({
 
   // OAuth client_id приложений (redirect URI = адрес index.html этого сайта; см. docs/CONFIGURATION.md).
   YANDEX_CLIENT_ID: '0dfc27e20c15427c88b0886a4922aa03',
-  GOOGLE_CLIENT_ID: '',
+  GOOGLE_CLIENT_ID: '608012088849-2qahjpfs91qp14iucc0ufaquv5kfm0l4.apps.googleusercontent.com',
 
   // Автосинхронизация.
   AUTO_SYNC_DELAY_MS: 2000,
