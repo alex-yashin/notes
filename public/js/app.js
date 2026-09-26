@@ -7,7 +7,7 @@ import {
 } from './notes.js';
 import {
   PROVIDERS, handleAuthRedirect, isTokenValid, loadSettings, saveSettings,
-  startGoogleAuth, startRegistration, startYandexAuth,
+  startGoogleAuth, startYandexAuth,
 } from './settings.js';
 import { createRemote } from './sync/index.js';
 import { AuthError, syncAll } from './sync/engine.js';
@@ -37,7 +37,7 @@ const el = {
   dialog: $('#settings-dialog'),
   settingsForm: $('#settings-form'),
   syncInfo: $('#settings-sync-info'),
-  registrationHint: $('#registration-hint'),
+
   settingsVersion: $('#settings-version'),
   toast: $('#toast'),
   updateBar: $('#update-bar'),
@@ -353,22 +353,11 @@ function fillSettingsForm(settings) {
     $(`[data-auth-state="${provider}"]`, form).textContent =
       t(isTokenValid(settings[provider]) ? 'auth.connected' : 'auth.notConnected');
   }
-  const { clientId } = settings.registration;
-  $('[data-auth-state="registration"]', form).textContent =
-    clientId ? t('registration.done', { clientId }) : t('registration.none');
-  el.registrationHint.textContent = t('registration.hint', { host: safeHost(CONFIG.REGISTRATION_URL) });
   el.settingsVersion.textContent = t('settings.version', { version: APP_VERSION });
   toggleProviderPanels();
   renderSyncInfo();
 }
 
-function safeHost(url) {
-  try {
-    return new URL(url).host;
-  } catch {
-    return t('registration.notConfigured');
-  }
-}
 
 async function renderSyncInfo() {
   let text = '';
@@ -430,21 +419,14 @@ const SETTINGS_ACTIONS = {
     saveSettingsForm();
     startGoogleAuth();
   },
-  register() {
-    saveSettingsForm();
-    startRegistration();
-  },
+
   'yandex-logout'() {
     resetCredentials(PROVIDERS.YANDEX, { token: '', expiresAt: 0 });
   },
   'gdrive-logout'() {
     resetCredentials(PROVIDERS.GDRIVE, { token: '', expiresAt: 0 });
   },
-  'registration-reset'() {
-    if (confirm(t('registration.confirmReset'))) {
-      resetCredentials(PROVIDERS.REGISTRATION, { clientId: '', clientSecret: '' });
-    }
-  },
+
 };
 
 function resetCredentials(provider, empty) {

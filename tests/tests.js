@@ -7,7 +7,7 @@ import {
 } from '/js/notes.js';
 import { InsecureContextError, sha256Hex, signRequest, EMPTY_SHA256, encodeRfc3986 } from '/js/sync/sigv4.js';
 import { ConflictError, syncAll } from '/js/sync/engine.js';
-import { basicAuth } from '/js/sync/registration.js';
+import { PROVIDERS, loadSettings } from '/js/settings.js';
 import { createS3Remote, normalizePrefix } from '/js/sync/s3.js';
 import { createYandexRemote } from '/js/sync/yandex.js';
 import { NetworkError } from '/js/sync/http.js';
@@ -488,8 +488,54 @@ test('Яндекс Диск: скачивание и загрузка по од�
   assert(api.length > 0 && api.every((c) => c.headers.authorization === 'OAuth secret-token'), 'к cloud-api — с токеном');
 });
 
-test('basicAuth поддерживает не-ASCII', () => {
-  assertEqual(basicAuth('id', 'пароль'), `Basic ${btoa(unescape(encodeURIComponent('id:пароль')))}`);
+// ---------------- Настройки ----------------
+
+const SETTINGS_STORAGE_KEY = 'notes-settings';
+
+/** Выполняет fn с заданным содержимым настроек в localStorage и восстанавливает прежние. */
+function withStoredSettings(value, fn) {
+  const previous = localStorage.getItem(SETTINGS_STORAGE_KEY);
+  localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(value));
+  try {
+    return fn();
+  } finally {
+    if (previous === null) localStorage.removeItem(SETTINGS_STORAGE_KEY);
+    else localStorage.setItem(SETTINGS_STORAGE_KEY, previous);
+  }
+}
+
+test('настройки: удалённый режим «Регистрация» → только на устройстве, секрет не переносится', () => {
+  const legacy = { provider: 'registration', registration: { clientId: 'id', clientSecret: 'top-secret' },
+    yandex: { token: 'y', expiresAt: 0 } };
+  const settings = withStoredSettings(legacy, loadSettings);
+  assertEqual(settings.provider, PROVIDERS.NONE);
+  assert(!('registration' in settings), 'устаревший раздел не попадает в настройки (и исчезнет при сохранении)');
+  assertEqual(settings.yandex.token, 'y', 'остальные настройки сохраняются');
+  assert(!Object.values(PROVIDERS).includes('registration'), 'провайдера registration больше нет');
+});
+
+test('index.html: провайдеры — устройство, Яндекс, S3, Google Drive; без «Регистрации»', async () => {
+  const html = await (await fetch(APP_INDEX_URL, { cache: 'no-store' })).text();
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const radios = [...doc.querySelectorAll('input[name="provider"]')];
+  assertEqual(radios.map((r) => r.value), ['none', 'yandex', 's3', 'gdrive']);
+  assert(radios.every((r) => !r.closest('[hidden]')), 'все пункты видимы (в т.ч. Google Drive)');
+  assertEqual(radios.map((r) => r.value).filter((v) => !Object.values(PROVIDERS).includes(v)), [], 'каждый пункт — известный провайдер');
+  assert(!doc.querySelector('[data-provider="registration"], [data-action="register"]'), 'панели регистрации нет');
+});
+
+test('index.html: внизу настроек — версия и ссылка на разработчика одной бледной строкой', async () => {
+  const html = await (await fetch(APP_INDEX_URL, { cache: 'no-store' })).text();
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const version = doc.getElementById('settings-version');
+  const link = doc.querySelector('a.settings__author');
+  assert(version && link, 'нет версии или ссылки');
+  assert(version.parentElement === link.parentElement && link.parentElement.classList.contains('hint'),
+    'в одной строке с классом hint (бледный шрифт)');
+  assertEqual([link.getAttribute('href'), link.textContent.trim(), link.target], ['https://alex-yashin.ru/', 'Alex Yashin', '_blank']);
+  assert((link.getAttribute('rel') ?? '').includes('noopener'), 'rel=noopener для внешней вкладки');
+  const dialog = doc.getElementById('settings-dialog');
+  assert(dialog.contains(link), 'ссылка в попапе настроек');
 });
 
 // ---------------- Движок синхронизации ----------------

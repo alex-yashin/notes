@@ -1,4 +1,4 @@
-// Настройки подключения и обработка возвратов с OAuth / внешней регистрации.
+// Настройки подключения и обработка возврата с OAuth (Яндекс, Google).
 
 import { CONFIG } from './config.js';
 import { YANDEX_AUTH_URL } from './sync/yandex.js';
@@ -11,8 +11,9 @@ const STORAGE_KEY = 'notes-settings';
 const PENDING_AUTH_KEY = 'notes-pending-auth';
 const MS_IN_SECOND = 1000;
 
+// Режим «Регистрация» удалён: сохранённое provider: 'registration' при загрузке становится NONE (см. loadSettings).
 export const PROVIDERS = Object.freeze({
-  NONE: 'none', S3: 's3', YANDEX: 'yandex', GDRIVE: 'gdrive', REGISTRATION: 'registration',
+  NONE: 'none', S3: 's3', YANDEX: 'yandex', GDRIVE: 'gdrive',
 });
 
 const defaultSettings = () => ({
@@ -23,7 +24,6 @@ const defaultSettings = () => ({
   },
   yandex: { token: '', expiresAt: 0 },
   gdrive: { token: '', expiresAt: 0 },
-  registration: { clientId: '', clientSecret: '' },
 });
 
 export function loadSettings() {
@@ -33,12 +33,17 @@ export function loadSettings() {
   } catch (error) {
     console.warn('[settings] повреждённые настройки сброшены', error);
   }
+  // Берём только известные разделы: устаревшие (например, registration с client_secret) отбрасываются
+  // и при следующем сохранении исчезают из localStorage.
   const merged = defaultSettings();
   for (const [key, fallback] of Object.entries(merged)) {
     if (saved[key] === undefined) continue;
     merged[key] = typeof fallback === 'object' ? { ...fallback, ...saved[key] } : saved[key];
   }
-  if (!Object.values(PROVIDERS).includes(merged.provider)) merged.provider = PROVIDERS.NONE;
+  if (!Object.values(PROVIDERS).includes(merged.provider)) {
+    console.info(`[settings] неизвестный провайдер «${merged.provider}» → только на этом устройстве`);
+    merged.provider = PROVIDERS.NONE;
+  }
   return merged;
 }
 
@@ -52,7 +57,7 @@ export function updateSettings(patch) {
   return next;
 }
 
-/** Адрес, на который возвращаются OAuth и регистрация: текущая страница без query/hash. */
+/** Адрес, на который возвращается OAuth: текущая страница без query/hash. */
 export const appReturnUrl = () => `${location.origin}${location.pathname}`;
 
 export function isTokenValid({ token, expiresAt }) {
@@ -106,11 +111,6 @@ export function startGoogleAuth() {
   startRedirect(PROVIDERS.GDRIVE, url);
 }
 
-export function startRegistration() {
-  const url = new URL(requireConfig('REGISTRATION_URL'));
-  url.searchParams.set('return_url', appReturnUrl());
-  startRedirect(PROVIDERS.REGISTRATION, url);
-}
 
 // ---------- Обработка возврата ----------
 
@@ -135,12 +135,7 @@ export function handleAuthRedirect() {
   }
 
   const settings = loadSettings();
-  if (pending.provider === PROVIDERS.REGISTRATION) {
-    const clientId = params.get('client_id');
-    const clientSecret = params.get('client_secret');
-    if (!clientId || !clientSecret) return { error: t('auth.noCredentials') };
-    settings.registration = { clientId, clientSecret };
-  } else if (pending.provider === PROVIDERS.YANDEX || pending.provider === PROVIDERS.GDRIVE) {
+  if (pending.provider === PROVIDERS.YANDEX || pending.provider === PROVIDERS.GDRIVE) {
     const token = params.get('access_token');
     if (!token) return { error: t('auth.noToken') };
     const expiresIn = Number(params.get('expires_in')) || 0;

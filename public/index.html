@@ -66,10 +66,9 @@
       <fieldset class="settings__providers">
         <legend data-i18n="settings.storage">Where to store notes</legend>
         <label><input type="radio" name="provider" value="none"> <span data-i18n="provider.none">Only on this device</span></label>
-        <label><input type="radio" name="provider" value="s3"> <span data-i18n="provider.s3">S3 storage</span></label>
         <label><input type="radio" name="provider" value="yandex"> <span data-i18n="provider.yandex">Yandex Disk</span></label>
+        <label><input type="radio" name="provider" value="s3"> <span data-i18n="provider.s3">S3 storage</span></label>
         <label><input type="radio" name="provider" value="gdrive"> <span data-i18n="provider.gdrive">Google Drive</span></label>
-        <label><input type="radio" name="provider" value="registration"> <span data-i18n="provider.registration">Registration</span></label>
       </fieldset>
 
       <fieldset class="settings__panel" data-provider="s3">
@@ -99,16 +98,12 @@
         <button class="btn btn--ghost" type="button" data-action="gdrive-logout" data-i18n="auth.logout">Sign out</button>
       </fieldset>
 
-      <fieldset class="settings__panel" data-provider="registration">
-        <legend data-i18n="provider.registration">Registration</legend>
-        <p class="auth-state" data-auth-state="registration"></p>
-        <p id="registration-hint" class="hint"></p>
-        <button class="btn" type="button" data-action="register" data-i18n="registration.register">Sign up</button>
-        <button class="btn btn--ghost" type="button" data-action="registration-reset" data-i18n="registration.reset">Reset</button>
-      </fieldset>
-
       <p id="settings-sync-info" class="hint"></p>
-      <p id="settings-version" class="hint"></p>
+      <!-- Версия и ссылка на разработчика — одной строкой, бледным шрифтом. Имя латиницей на обоих языках, не переводится. -->
+      <p class="hint settings__about">
+        <span id="settings-version"></span>
+        <a class="settings__author" href="https://alex-yashin.ru/" target="_blank" rel="noopener">Alex Yashin</a>
+      </p>
 
       <footer class="dialog__footer">
         <button class="btn" type="button" data-action="sync-now" data-i18n="settings.syncNow">Sync now</button>

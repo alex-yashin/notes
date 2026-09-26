@@ -2,7 +2,7 @@
 
 ## Требования
 
-- PHP ≥ 7.4 — dev-сервер, mock-API и служебные скрипты (`tools/`).
+- PHP ≥ 7.4 — dev-сервер и служебные скрипты (`tools/`).
 - Chromium — автотесты в headless-режиме (поддерживается snap-версия).
 - Node.js и сборка не нужны: приложение написано на чистых ES-модулях.
 
@@ -10,7 +10,6 @@
 
 ```bash
 php -S localhost:8000 tools/dev-server.php     # приложение: http://localhost:8000/, тесты: /tests/tests.html
-php -S localhost:8081 tools/mock-api.php       # dev-сервис регистрации и API (по желанию)
 ```
 
 `tools/dev-server.php` отдаёт `/tests/*` из `tests/`, всё остальное — из `public/`. Выйти за пределы этих
@@ -53,7 +52,6 @@ php -S localhost:8081 tools/mock-api.php       # dev-сервис регистр
 | Скрипт                  | Назначение |
 |-------------------------|------------|
 | `tools/make-icons.php`  | генерирует `public/icons/icon-{192,512}.png` (повторяет `icon.svg`, нужен GD) |
-| `tools/mock-api.php`    | эталонный сервис регистрации и API хранения, см. [PROTOCOL.md](PROTOCOL.md) |
 | `tools/cdp-close.php`   | закрывает Chromium через DevTools Protocol |
 | `tools/release.php`     | версия релиза = хеш `public/` → `CACHE_VERSION` и `APP_VERSION`; `--check` — только проверка (и `APP_SHELL`) |
 | `tools/secure-context-check.sh` | проверка работы по http:// с LAN-адреса (небезопасный контекст), см. [CONFIGURATION.md](CONFIGURATION.md) |
@@ -68,13 +66,13 @@ php -S localhost:8081 tools/mock-api.php       # dev-сервис регистр
 app.js          UI, события, планирование синхронизации
 notes.js        доменная логика: чистые функции, CRDT-слияние, форматирование
 db.js, repo.js  IndexedDB и локальный репозиторий (флаги изменённых файлов, состояние синхронизации)
-settings.js     настройки, старт OAuth/регистрации, обработка возврата
+settings.js     настройки, старт OAuth (Яндекс, Google), обработка возврата
 i18n.js         словари ru/en, определение языка, перевод разметки
 update.js       регистрация SW, проверка обновлений, переключение на новую версию
 version.js      версия релиза (проставляет tools/release.php, вручную не править)
 config.js       конфигурация окружения
 sync/engine.js  движок синхронизации (файлы по дням, повтор при конфликте)
-sync/*.js       адаптеры: s3 (+ sigv4), yandex, gdrive, registration; http.js — общие хелперы
+sync/*.js       адаптеры: yandex, s3 (+ sigv4), gdrive; http.js — общие хелперы
 ```
 
 ## Service worker

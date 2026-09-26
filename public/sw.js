@@ -7,9 +7,9 @@
 //   3. Страница показывает «Доступна новая версия — Обновить»; по нажатию шлёт SKIP_WAITING и перезагружается.
 //      Без нажатия новая версия активируется, когда закроются все вкладки приложения.
 //   4. Запросы оболочки отдаются только из кэша своей версии — смешения старых и новых файлов не бывает.
-// Запросы к внешним API (S3, Диск, Drive, регистрация) SW не трогает.
+// Запросы к внешним API (S3, Яндекс Диск, Google Drive) SW не трогает.
 
-const CACHE_VERSION = 'notes-d438c178b268';
+const CACHE_VERSION = 'notes-629ba7e6b8bf';
 const CACHE_PREFIX = 'notes-';
 const INDEX_URL = 'index.html';
 const MSG_SKIP_WAITING = 'SKIP_WAITING';
@@ -33,7 +33,7 @@ const APP_SHELL = [
   'js/sync/gdrive.js',
   'js/sync/http.js',
   'js/sync/index.js',
-  'js/sync/registration.js',
+
   'js/sync/s3.js',
   'js/sync/sigv4.js',
   'js/sync/yandex.js',
@@ -76,7 +76,7 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url);
   if (request.method !== 'GET' || url.origin !== self.location.origin) return;
 
-  // Навигация (в т.ч. возврат с OAuth/регистрации с ?query и #hash) — всегда оболочка этой версии.
+  // Навигация (в т.ч. возврат с OAuth с ?query и #hash) — всегда оболочка этой версии.
   const isNavigation = request.mode === 'navigate';
   event.respondWith((async () => {
     const cache = await caches.open(CACHE_VERSION);

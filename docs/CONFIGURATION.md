@@ -24,8 +24,8 @@
 | service worker          | офлайн-режим и доставка обновлений |
 | `crypto.randomUUID`     | ничего: везде используется `newId()` с запасным вариантом на `crypto.getRandomValues` |
 
-При таком открытии приложение показывает предупреждение. Заметки на устройстве, вход через Яндекс и Google,
-режим «Регистрация» и Google Drive продолжают работать.
+При таком открытии приложение показывает предупреждение. Заметки на устройстве, вход через Яндекс и Google
+и синхронизация с Google Drive продолжают работать.
 
 Для проверки с телефона:
 - **GitHub Pages** (https) — проще всего;
@@ -40,8 +40,7 @@
 
 | Параметр               | Назначение |
 |------------------------|------------|
-| `REGISTRATION_URL`     | внешний сервис регистрации; приложение передаёт `return_url` и `state` |
-| `REGISTRATION_API_URL` | API хранения для режима «Регистрация» (см. [PROTOCOL.md](PROTOCOL.md)) |
+
 | `YANDEX_CLIENT_ID`     | client_id OAuth-приложения Яндекса |
 | `GOOGLE_CLIENT_ID`     | client_id OAuth-клиента Google |
 | `AUTO_SYNC_DELAY_MS`   | задержка автосинхронизации после локального изменения |
@@ -126,17 +125,3 @@ S3_KEY=… S3_SECRET=… ./tools/s3-live-check.sh https://s3.regru.cloud <bucket
 
 Скрипт прогоняет в headless Chromium с origin `http://localhost:8000` полный цикл: list, условная запись,
 синхронизация двух устройств. Он пишет только в префикс `notes-selftest/`. После проверки этот префикс можно удалить.
-
-### Режим «Регистрация»
-
-Нужны внешний сервис регистрации и API хранения, реализующие [PROTOCOL.md](PROTOCOL.md).
-Для локальной разработки есть эталонная реализация `tools/mock-api.php`:
-
-```js
-// public/js/config.js
-export const CONFIG = Object.freeze({
-  REGISTRATION_URL: 'http://localhost:8081/register',
-  REGISTRATION_API_URL: 'http://localhost:8081/v1',
-  // ...
-});
-```

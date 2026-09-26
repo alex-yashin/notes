@@ -73,6 +73,31 @@ JS), true);
 expect($btn['text'] === '' && $btn['svg'] && $btn['aria'] && $btn['round'] && $btn['w'] === $btn['h'],
     "кнопка отправки — круглая {$btn['w']}×{$btn['h']} со стрелкой, aria-label «{$btn['aria']}»", $btn);
 
+// Попап настроек: порядок провайдеров, версия заполнена, ссылка на разработчика в той же строке и тем же шрифтом.
+$cdp->evaluate("(() => { document.getElementById('settings-btn').click(); return true; })()");
+$about = json_decode((string) cdpWaitFor($cdp, <<<'JS'
+document.getElementById('settings-dialog').open && JSON.stringify((() => {
+  const dlg = document.getElementById('settings-dialog');
+  const ver = document.getElementById('settings-version');
+  const a = dlg.querySelector('a.settings__author');
+  const vr = ver.getBoundingClientRect(); const ar = a.getBoundingClientRect();
+  const cs = (e) => getComputedStyle(e);
+  return {
+    providers: [...dlg.querySelectorAll('.settings__providers input[name="provider"]')]
+      .filter((i) => i.closest('label').offsetParent !== null).map((i) => i.value),
+    version: ver.textContent, link: a.textContent, href: a.href,
+    sameLine: Math.abs(vr.top - ar.top) < 2 && ar.left > vr.right,
+    sameFont: cs(ver).color === cs(a).color && cs(ver).fontSize === cs(a).fontSize,
+  };
+})())
+JS, 'попап настроек'), true);
+expect($about['providers'] === ['none', 'yandex', 's3', 'gdrive'],
+    'настройки: устройство → Яндекс → S3 → Google Drive, «Регистрации» нет', $about);
+expect(preg_match('/[0-9a-f]{12}|dev/', (string) $about['version']) === 1 && $about['link'] === 'Alex Yashin'
+    && $about['href'] === 'https://alex-yashin.ru/' && $about['sameLine'] && $about['sameFont'],
+    "внизу настроек: «{$about['version']}» и ссылка «{$about['link']}» одной строкой, тем же бледным шрифтом", $about);
+$cdp->evaluate("(() => { document.getElementById('settings-dialog').close(); return true; })()");
+
 // Данные: 3 заметки с разными наборами тегов.
 addNote($cdp, 'без тегов');
 addTag($cdp, 'work');                       // тег создаётся и сразу выбирается

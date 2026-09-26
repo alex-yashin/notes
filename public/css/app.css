@@ -216,6 +216,10 @@ body {
 .settings label { display: grid; gap: 4px; font-size: .9rem; }
 .settings .settings__providers label, .settings label.check { display: flex; align-items: center; gap: 8px; }
 .hint { margin: 0; color: var(--muted); font-size: .8rem; }
+/* Версия слева, ссылка на разработчика справа — тем же бледным шрифтом; подчёркивание только при наведении. */
+.settings__about { display: flex; justify-content: space-between; gap: 8px; }
+.settings__author { color: inherit; text-decoration: none; }
+.settings__author:hover, .settings__author:focus-visible { text-decoration: underline; }
 .auth-state { margin: 0; font-size: .9rem; }
 
 /* ---------- Полоса обновления ---------- */

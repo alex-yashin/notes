@@ -42,8 +42,6 @@ const en = {
   'provider.s3': 'S3 storage',
   'provider.yandex': 'Yandex Disk',
   'provider.gdrive': 'Google Drive',
-  'provider.registration': 'Registration',
-  'provider.api': 'API',
 
   's3.endpoint': 'Endpoint',
   's3.region': 'Region',
@@ -64,17 +62,10 @@ const en = {
   'auth.missingConfig': '{name} is not set in js/config.js',
   'auth.stateMismatch': 'Authorization response failed the state check — please connect again',
   'auth.denied': 'Authorization denied: {reason}',
-  'auth.noCredentials': 'Registration service did not return client_id / client_secret',
+
   'auth.noToken': 'access_token was not received',
   'auth.unknownProvider': 'Unknown authorization provider',
 
-  'registration.hint': 'You will be redirected to {host} and come back with credentials.',
-  'registration.notConfigured': 'not configured',
-  'registration.register': 'Sign up',
-  'registration.reset': 'Reset',
-  'registration.done': 'Device registered (client_id: {clientId})',
-  'registration.none': 'Not registered',
-  'registration.confirmReset': 'Reset client_id / client_secret on this device?',
 
   'sync.offline': 'offline',
   'sync.running': 'syncing…',
@@ -93,7 +84,7 @@ const en = {
   'error.fillS3': 'Fill in the S3 settings',
   'error.signIn': 'Sign in to {provider}',
   'error.notConnected': '{provider} is not connected',
-  'error.registrationIncomplete': 'Registration is not completed',
+
   'error.s3NoConditional': 'The storage does not support conditional writes — turn them off in the S3 settings',
   'error.network': 'No connection to {host}: check the network or the server CORS settings',
   'error.s3Network': 'Cannot reach {host}. Most likely the bucket CORS does not allow {origin}: add it to AllowedOrigin (methods GET, PUT, HEAD; AllowedHeader *; ExposeHeader ETag)',
@@ -155,8 +146,6 @@ const ru = {
   'provider.s3': 'Хранилище S3',
   'provider.yandex': 'Яндекс Диск',
   'provider.gdrive': 'Google Drive',
-  'provider.registration': 'Регистрация',
-  'provider.api': 'API',
 
   's3.endpoint': 'Endpoint',
   's3.region': 'Регион',
@@ -177,17 +166,10 @@ const ru = {
   'auth.missingConfig': 'Не задан {name} в js/config.js',
   'auth.stateMismatch': 'Ответ авторизации не прошёл проверку state — повторите подключение',
   'auth.denied': 'Авторизация отклонена: {reason}',
-  'auth.noCredentials': 'Сервис регистрации не вернул client_id / client_secret',
+
   'auth.noToken': 'Не получен access_token',
   'auth.unknownProvider': 'Неизвестный провайдер авторизации',
 
-  'registration.hint': 'Вы перейдёте на {host} и вернётесь с учётными данными.',
-  'registration.notConfigured': 'не настроено',
-  'registration.register': 'Зарегистрироваться',
-  'registration.reset': 'Сбросить',
-  'registration.done': 'Устройство зарегистрировано (client_id: {clientId})',
-  'registration.none': 'Не зарегистрировано',
-  'registration.confirmReset': 'Сбросить client_id / client_secret на этом устройстве?',
 
   'sync.offline': 'офлайн',
   'sync.running': 'синхронизация…',
@@ -206,7 +188,7 @@ const ru = {
   'error.fillS3': 'Заполните параметры S3',
   'error.signIn': 'Войдите в {provider}',
   'error.notConnected': '{provider} не подключён',
-  'error.registrationIncomplete': 'Регистрация не завершена',
+
   'error.s3NoConditional': 'Хранилище не поддерживает условную запись — отключите её в настройках S3',
   'error.network': 'Нет соединения с {host}: проверьте сеть или настройки CORS сервера',
   'error.s3Network': 'Нет доступа к {host}. Скорее всего, CORS бакета не разрешает {origin}: добавьте его в AllowedOrigin (методы GET, PUT, HEAD; AllowedHeader *; ExposeHeader ETag)',
