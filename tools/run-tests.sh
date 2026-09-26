@@ -35,11 +35,18 @@ TESTS_PATH="/tests/tests.html"
 TARGET_ID=$(curl -sf -X PUT "localhost:$PORT/json/new?$APP_URL$TESTS_PATH?run=$(date +%s%N)" \
   | grep -oE '"id": *"[^"]+"' | cut -d'"' -f4)
 
+# Заголовок вкладки по id — разбором JSON. grep по сырому ответу ломался, когда в тексте падения были
+# фигурные скобки или кавычки, и раннер вместо FAIL уходил в таймаут.
+tab_title() {
+  curl -s "localhost:$PORT/json/list" | php -r '
+    foreach ((array) json_decode(stream_get_contents(STDIN), true) as $tab) {
+      if (($tab["id"] ?? "") === $argv[1]) { echo html_entity_decode($tab["title"] ?? "", ENT_QUOTES | ENT_HTML5); }
+    }' "$TARGET_ID"
+}
+
 for _ in $(seq 1 "$TIMEOUT_S"); do
-  TITLE=$(curl -s "localhost:$PORT/json/list" \
-    | tr -d '\n' | grep -oE "\{[^{}]*\"id\": *\"$TARGET_ID\"[^{}]*\}" \
-    | grep -oE '"title": *"(PASS|FAIL)[^"]*"' | cut -d'"' -f4 || true)
-  if [[ -n "$TITLE" ]]; then echo "$TITLE"; [[ "$TITLE" == PASS* ]]; exit $?; fi
+  TITLE=$(tab_title)
+  if [[ "$TITLE" == PASS* || "$TITLE" == FAIL* ]]; then echo "$TITLE"; [[ "$TITLE" == PASS* ]]; exit $?; fi
   sleep 1
 done
 echo "Тесты не завершились за ${TIMEOUT_S}s" >&2

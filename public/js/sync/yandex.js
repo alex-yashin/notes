@@ -17,6 +17,14 @@ const LIST_FIELDS = '_embedded.items.name,_embedded.items.sha256,_embedded.items
 
 export const YANDEX_AUTH_URL = 'https://oauth.yandex.ru/authorize';
 
+/**
+ * Запросы по одноразовым ссылкам (href из /download и /upload) уходят БЕЗ Referer.
+ * downloader.disk.yandex.ru на запрос с чужим Referer отвечает 403 без CORS-заголовков — в браузере
+ * это выглядит как «Failed to fetch» (проверено: тот же href без Referer — 302 → 200 с ACAO *).
+ * Токен сюда не передаём: ссылка уже подписана, а лишний Authorization утёк бы на хосты хранилища.
+ */
+const LINK_OPTIONS = Object.freeze({ referrerPolicy: 'no-referrer', credentials: 'omit' });
+
 export function createYandexRemote({ token }) {
   if (!token) throw new AuthError(t('error.notConnected', { provider: t(PROVIDER_KEY) }));
   const headers = { authorization: `OAuth ${token}` };
@@ -55,7 +63,7 @@ export function createYandexRemote({ token }) {
       const res = await request(api('/download', { path: pathOf(name) }), { headers });
       if (res.status === HTTP.NOT_FOUND) return null;
       const { href } = await (await ensureOk(res, ctx('op.downloadLink', name))).json();
-      const file = await ensureOk(await request(href), ctx('op.download', name));
+      const file = await ensureOk(await request(href, LINK_OPTIONS), ctx('op.download', name));
       const text = await file.text();
       return { text, version: await sha256Hex(text) };
     },
@@ -66,7 +74,7 @@ export function createYandexRemote({ token }) {
 
       const res = await request(api('/upload', { path: pathOf(name), overwrite: 'true' }), { headers });
       const { href, method } = await (await ensureOk(res, ctx('op.uploadLink', name))).json();
-      await ensureOk(await request(href, { method: method || 'PUT', body: text }), ctx('op.upload', name));
+      await ensureOk(await request(href, { ...LINK_OPTIONS, method: method || 'PUT', body: text }), ctx('op.upload', name));
       return { version: await sha256Hex(text) };
     },
   };

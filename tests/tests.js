@@ -9,6 +9,7 @@ import { InsecureContextError, sha256Hex, signRequest, EMPTY_SHA256, encodeRfc39
 import { ConflictError, syncAll } from '/js/sync/engine.js';
 import { basicAuth } from '/js/sync/registration.js';
 import { createS3Remote, normalizePrefix } from '/js/sync/s3.js';
+import { createYandexRemote } from '/js/sync/yandex.js';
 import { NetworkError } from '/js/sync/http.js';
 import {
   DICTIONARIES, FALLBACK_LANGUAGE, applyTranslations, detectLanguage, getLanguage, getLocale, setLanguage, t,
@@ -318,7 +319,10 @@ async function withFakeFetch(handler, fn) {
   const calls = [];
   globalThis.fetch = async (url, options = {}) => {
     const headers = Object.fromEntries(Object.entries(options.headers ?? {}).map(([k, v]) => [k.toLowerCase(), v]));
-    const call = { method: options.method ?? 'GET', path: new URL(url).pathname, headers, body: options.body };
+    const call = {
+      method: options.method ?? 'GET', url: String(url), path: new URL(url).pathname, headers, body: options.body,
+      referrerPolicy: options.referrerPolicy, credentials: options.credentials,
+    };
     calls.push(call);
     return handler(call);
   };
@@ -442,6 +446,47 @@ test('небезопасный контекст: без crypto.subtle — пон
   assert(error instanceof InsecureContextError, `ожидалась InsecureContextError, получено ${error}`);
   assert(error.message.includes('https://') && error.message.includes('localhost'), `подсказка: ${error.message}`);
 }));
+
+// ---------------- Яндекс Диск ----------------
+
+const YANDEX_DOWNLOAD_HREF = 'https://downloader.disk.yandex.ru/disk/abc?filename=day.json';
+const YANDEX_UPLOAD_HREF = 'https://uploader.disk.yandex.net/upload-target/xyz';
+
+/** Фейковый Яндекс Диск: cloud-api выдаёт одноразовые ссылки, downloader/uploader отдают и принимают файл. */
+function fakeYandexDisk(fileText) {
+  return ({ url, method }) => {
+    const { host, pathname } = new URL(url);
+    const json = (body) => new Response(JSON.stringify(body), { status: 200 });
+    if (host === 'cloud-api.yandex.net' && pathname.endsWith('/download')) return json({ href: YANDEX_DOWNLOAD_HREF });
+    if (host === 'cloud-api.yandex.net' && pathname.endsWith('/upload')) return json({ href: YANDEX_UPLOAD_HREF, method: 'PUT' });
+    if (host === 'cloud-api.yandex.net' && method === 'PUT') return new Response('{}', { status: 201 }); // папка создана
+    if (host === 'cloud-api.yandex.net') return new Response('{}', { status: 404 }); // метаданные: файла ещё нет
+    if (url === YANDEX_DOWNLOAD_HREF && method === 'GET') return new Response(fileText, { status: 200 });
+    if (url === YANDEX_UPLOAD_HREF && method === 'PUT') return new Response('', { status: 201 });
+    return new Response('', { status: 500 });
+  };
+}
+
+test('Яндекс Диск: скачивание и загрузка по одноразовой ссылке — без Referer и без токена', async () => {
+  const remote = createYandexRemote({ token: 'secret-token' });
+  const fileText = serializeFile([]);
+  let got = null;
+  const calls = await withFakeFetch(fakeYandexDisk(fileText), async () => {
+    got = await remote.get('day-2026-09-26.json');
+    await remote.put('day-2026-09-26.json', fileText, null);
+  });
+  assertEqual(got.text, fileText, 'файл скачан');
+
+  const links = calls.filter((c) => c.url === YANDEX_DOWNLOAD_HREF || c.url === YANDEX_UPLOAD_HREF);
+  assertEqual(links.map((c) => c.method), ['GET', 'PUT'], 'оба запроса по ссылкам выполнены');
+  for (const c of links) {
+    // downloader.disk.yandex.ru с Referer отвечает 403 без CORS → «Failed to fetch» в браузере.
+    assertEqual(c.referrerPolicy, 'no-referrer', `${c.method}: Referer не отправляется`);
+    assert(!('authorization' in c.headers), `${c.method}: токен не уходит на хосты хранилища`);
+  }
+  const api = calls.filter((c) => new URL(c.url).host === 'cloud-api.yandex.net');
+  assert(api.length > 0 && api.every((c) => c.headers.authorization === 'OAuth secret-token'), 'к cloud-api — с токеном');
+});
 
 test('basicAuth поддерживает не-ASCII', () => {
   assertEqual(basicAuth('id', 'пароль'), `Basic ${btoa(unescape(encodeURIComponent('id:пароль')))}`);

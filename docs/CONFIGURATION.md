@@ -59,6 +59,11 @@ Redirect URI для всех провайдеров — адрес `index.html` 
 
 Используется implicit flow: токен приходит в `#access_token=…`.
 
+Файлы скачиваются и загружаются по одноразовым ссылкам (`href` из `/download` и `/upload`). Эти запросы
+уходят **без `Referer`** и без токена. `downloader.disk.yandex.ru` на запрос с `Referer` стороннего сайта отвечает
+`403` без CORS-заголовков, и браузер показывает это как «Failed to fetch». Без `Referer` цепочка работает:
+`302` → `*.storage.yandex.net` → `200` с `Access-Control-Allow-Origin: *`.
+
 Redirect URI должен точно совпадать с адресом, с которого открыто приложение (схема, хост, порт, путь).
 Для разработки добавьте, например, `http://localhost:8000/` и `http://localhost:8000/index.html`, для прода — адреса на GitHub Pages.
 
