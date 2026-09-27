@@ -141,6 +141,21 @@ body {
 .chip--input { width: 9em; background: var(--surface); cursor: text; }
 .chip--small { padding: 0 8px; font-size: .75rem; color: var(--primary); border-color: transparent; background: var(--primary-soft); }
 
+/* ---------- Выбор дня новой заметки ---------- */
+/* Поле даты невидимо лежит под чипом «Дата»: display:none нельзя — showPicker() не работает у неотрисованного поля,
+   а календарь открывается привязанным к положению поля. */
+.day-picker__custom { position: relative; display: inline-flex; }
+.day-picker__input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
 /* ---------- Список заметок ---------- */
 .notes {
     margin-top: 3rem;

@@ -2,8 +2,9 @@
 // Модули приложения импортируются от корня сайта: dev-сервер отдаёт public/ как «/», а tests/ как «/tests/».
 
 import {
-  FILE_FORMAT_VERSION, FormatTooNewError, changedRecords, createNote, createTag, dayKey, dayOrdinals, formatDayLabel,
-  groupByDay, mergeRecords, newId, parseFile, parseFileName, pickWinner, serializeFile, tombstone, visibleNotes,
+  DAY_CHOICE, FILE_FORMAT_VERSION, FormatTooNewError, changedRecords, createNote, createTag, dayKey, dayOrdinals,
+  formatDayLabel, groupByDay, isValidDayKey, mergeRecords, newId, parseFile, parseFileName, pickWinner, resolveNoteDay,
+  serializeFile, tombstone, visibleNotes, yesterdayKey,
 } from '/js/notes.js';
 import { InsecureContextError, sha256Hex, signRequest, EMPTY_SHA256, encodeRfc3986 } from '/js/sync/sigv4.js';
 import { ConflictError, syncAll } from '/js/sync/engine.js';
@@ -67,6 +68,47 @@ test('createNote отклоняет пустой текст', () => {
   let thrown = false;
   try { createNote('   '); } catch { thrown = true; }
   assert(thrown, 'должно быть исключение');
+});
+
+/** Сообщение исключения fn() или null, если исключения не было. */
+function errorOf(fn) {
+  try {
+    fn();
+  } catch (error) {
+    return error.message;
+  }
+  return null;
+}
+
+test('createNote: заметка задним числом — в свой день, время создания — реальное', () => {
+  const now = new Date(2024, 5, 10, 12, 30);
+  const n = createNote('вчерашняя', [], now, '2024-06-09');
+  assertEqual([n.day, n.createdAt], ['2024-06-09', now.getTime()]);
+  assertEqual(createNote('сегодня', [], now).day, '2024-06-10', 'по умолчанию — сегодня');
+});
+
+test('createNote: будущая и некорректная дата отклоняются', () => withLanguage('ru', () => {
+  const now = new Date(2024, 5, 10, 23, 59);
+  assertEqual(errorOf(() => createNote('x', [], now, '2024-06-11')), 'Заметку нельзя добавить будущим числом');
+  for (const bad of ['2024-02-30', '2024-13-01', '10.06.2024', '', '../x']) {
+    assertEqual(errorOf(() => createNote('x', [], now, bad)), 'Некорректная дата заметки', bad);
+  }
+}));
+
+test('isValidDayKey и yesterdayKey: настоящие даты, переход через месяц и год', () => {
+  assertEqual(['2024-02-29', '2023-02-29', '2024-06-10', '2024-6-10'].map(isValidDayKey), [true, false, true, false]);
+  assertEqual(yesterdayKey(new Date(2024, 0, 1, 0, 5)), '2023-12-31');
+  assertEqual(yesterdayKey(new Date(2024, 2, 1, 12)), '2024-02-29');
+});
+
+test('resolveNoteDay: сегодня / вчера считаются при сохранении, выбранная дата — как есть', () => {
+  const beforeMidnight = new Date(2024, 5, 10, 23, 59);
+  const afterMidnight = new Date(2024, 5, 11, 0, 1);
+  assertEqual(resolveNoteDay(DAY_CHOICE.TODAY, null, beforeMidnight), '2024-06-10');
+  assertEqual(resolveNoteDay(DAY_CHOICE.TODAY, null, afterMidnight), '2024-06-11', 'после полуночи — новый день');
+  assertEqual(resolveNoteDay(DAY_CHOICE.YESTERDAY, null, afterMidnight), '2024-06-10');
+  assertEqual(resolveNoteDay(DAY_CHOICE.CUSTOM, '2024-05-01', afterMidnight), '2024-05-01');
+  assertEqual(resolveNoteDay(DAY_CHOICE.CUSTOM, null, afterMidnight), '2024-06-11', 'дата не выбрана — сегодня');
 });
 
 test('createTag: id — нормализованное имя в нижнем регистре', () => {

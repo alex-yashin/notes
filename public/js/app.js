@@ -3,7 +3,8 @@
 import { CONFIG } from './config.js';
 import { repo } from './repo.js';
 import {
-  activeTags, createNote, createTag, dayOrdinals, formatDayLabel, formatTime, groupByDay, tombstone, visibleNotes,
+  DAY_CHOICE, activeTags, createNote, createTag, dayKey, dayOrdinals, formatDayLabel, formatTime, groupByDay,
+  isValidDayKey, resolveNoteDay, tombstone, visibleNotes, yesterdayKey,
 } from './notes.js';
 import {
   PROVIDERS, handleAuthRedirect, isTokenValid, loadSettings, saveSettings,
@@ -31,6 +32,9 @@ const el = {
   newTagInput: $('#new-tag-input'),
   list: $('#notes-list'),
   clearTagsBtn: $('#clear-tags-btn'),
+  dayPicker: $('#day-picker'),
+  dayCustomBtn: $('#day-custom-btn'),
+  dayInput: $('#day-input'),
   noteTemplate: $('#note-template'),
   syncStatus: $('#sync-status'),
   settingsBtn: $('#settings-btn'),
@@ -49,6 +53,9 @@ const state = {
   tags: [],
   // Выбранные в форме теги: прикрепляются к новой заметке И фильтруют список (заметки со всеми тегами).
   selectedTagIds: new Set(),
+  // День новой заметки: выбор сохраняется между заметками, пока пользователь его не сменит.
+  dayChoice: DAY_CHOICE.TODAY,
+  customDay: null, // YYYY-MM-DD при dayChoice === CUSTOM
 };
 
 // ================= Данные =================
@@ -63,8 +70,21 @@ const tagName = (id) => state.tags.find((t) => t.id === id && !t.deleted)?.name 
 // ================= Рендер =================
 
 function render() {
+  renderDayPicker();
   renderTagPicker();
   renderNotes();
+}
+
+/** Чипы дня: активный выбор, подпись «Дата» или выбранная дата, граница календаря (без будущих дней). */
+function renderDayPicker() {
+  for (const chip of el.dayPicker.querySelectorAll('[data-day-choice]')) {
+    const active = chip.dataset.dayChoice === state.dayChoice;
+    chip.classList.toggle('chip--active', active);
+    chip.setAttribute('aria-pressed', String(active));
+  }
+  const custom = state.dayChoice === DAY_CHOICE.CUSTOM && state.customDay;
+  el.dayCustomBtn.textContent = custom ? formatDayLabel(state.customDay) : t('noteDay.custom');
+  el.dayInput.max = dayKey();
 }
 
 function tagChip(tag, { active = false, small = false } = {}) {
@@ -136,7 +156,9 @@ async function onSubmitNote(event) {
   const text = el.text.value.trim();
   if (!text) return;
   try {
-    await repo.saveNote(createNote(text, [...state.selectedTagIds]));
+    const now = new Date();
+    const day = resolveNoteDay(state.dayChoice, state.customDay, now);
+    await repo.saveNote(createNote(text, [...state.selectedTagIds], now, day));
     el.text.value = '';
     autoGrow();
     el.text.focus();
@@ -174,6 +196,51 @@ function onNoteKeydown(event) {
   if (event.key !== 'Enter' || event.isComposing) return;
   event.preventDefault();
   el.form.requestSubmit();
+}
+
+// ================= День новой заметки =================
+
+function setDayChoice(choice, customDay = null) {
+  state.dayChoice = choice;
+  state.customDay = choice === DAY_CHOICE.CUSTOM ? customDay : null;
+  renderDayPicker();
+}
+
+/** Открывает календарь браузера. showPicker нет в старых браузерах — тогда фокус и клик по полю. */
+function openDatePicker() {
+  const input = el.dayInput;
+  input.max = dayKey();
+  input.value = state.customDay ?? (state.dayChoice === DAY_CHOICE.YESTERDAY ? yesterdayKey() : dayKey());
+  try {
+    if (typeof input.showPicker === 'function') {
+      input.showPicker();
+      return;
+    }
+  } catch (error) {
+    console.warn('[app] showPicker недоступен', error);
+  }
+  input.focus();
+  input.click();
+}
+
+function onDayPickerClick(event) {
+  const chip = event.target.closest('[data-day-choice]');
+  if (!chip) return;
+  if (chip.dataset.dayChoice === DAY_CHOICE.CUSTOM) openDatePicker();
+  else setDayChoice(chip.dataset.dayChoice);
+}
+
+/** Дата из календаря. Сегодня/вчера включают свои чипы, будущая (ввод вручную мимо max) отклоняется. */
+function onDayInputChange() {
+  const day = el.dayInput.value;
+  if (!isValidDayKey(day)) return;
+  if (day > dayKey()) {
+    showToast(t('error.futureDay'));
+    return;
+  }
+  if (day === dayKey()) setDayChoice(DAY_CHOICE.TODAY);
+  else if (day === yesterdayKey()) setDayChoice(DAY_CHOICE.YESTERDAY);
+  else setDayChoice(DAY_CHOICE.CUSTOM, day);
 }
 
 function showNewTagInput() {
@@ -477,6 +544,8 @@ function bindEvents() {
   el.tagPicker.addEventListener('click', onTagPickerClick);
   el.list.addEventListener('click', onListClick);
   el.clearTagsBtn.addEventListener('click', clearSelectedTags);
+  el.dayPicker.addEventListener('click', onDayPickerClick);
+  el.dayInput.addEventListener('change', onDayInputChange);
   el.syncStatus.addEventListener('click', onSyncStatusClick);
 
   el.settingsBtn.addEventListener('click', () => {

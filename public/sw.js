@@ -9,7 +9,7 @@
 //   4. Запросы оболочки отдаются только из кэша своей версии — смешения старых и новых файлов не бывает.
 // Запросы к внешним API (S3, Яндекс Диск, Google Drive) SW не трогает.
 
-const CACHE_VERSION = 'notes-629ba7e6b8bf';
+const CACHE_VERSION = 'notes-e39a7a3c83d3';
 const CACHE_PREFIX = 'notes-';
 const INDEX_URL = 'index.html';
 const MSG_SKIP_WAITING = 'SKIP_WAITING';

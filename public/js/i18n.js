@@ -29,6 +29,9 @@ const en = {
   'notes.emptyFiltered': 'No notes with the selected tags',
   'day.today': 'Today',
   'day.yesterday': 'Yesterday',
+  'noteDay.label': 'Note date',
+  'noteDay.custom': 'Date',
+  'noteDay.pickTitle': 'Choose a date',
 
   'settings.title': 'Settings',
   'settings.close': 'Close',
@@ -77,6 +80,8 @@ const en = {
 
   'error.emptyNote': 'Empty note',
   'error.emptyTag': 'Empty tag name',
+  'error.badDay': 'Invalid note date',
+  'error.futureDay': 'A note cannot be dated in the future',
   'error.badSyncFile': 'Invalid sync file format',
   'error.conflict': 'File version conflict: {name}',
   'error.reauth': 'Please sign in again',
@@ -133,6 +138,9 @@ const ru = {
   'notes.emptyFiltered': 'Нет заметок с выбранными тегами',
   'day.today': 'Сегодня',
   'day.yesterday': 'Вчера',
+  'noteDay.label': 'Дата заметки',
+  'noteDay.custom': 'Дата',
+  'noteDay.pickTitle': 'Выбрать дату',
 
   'settings.title': 'Настройки',
   'settings.close': 'Закрыть',
@@ -181,6 +189,8 @@ const ru = {
 
   'error.emptyNote': 'Пустая заметка',
   'error.emptyTag': 'Пустое имя тега',
+  'error.badDay': 'Некорректная дата заметки',
+  'error.futureDay': 'Заметку нельзя добавить будущим числом',
   'error.badSyncFile': 'Неверный формат файла синхронизации',
   'error.conflict': 'Конфликт версий файла {name}',
   'error.reauth': 'Требуется повторный вход',

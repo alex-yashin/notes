@@ -27,6 +27,18 @@
 
   <main class="container">
     <form id="note-form" class="note-form" autocomplete="off">
+      <!-- День новой заметки: «Сегодня» (по умолчанию), «Вчера», «Дата» — системный календарь. Выбор сохраняется
+           между заметками. Подпись чипа «Дата» (выбранная дата) выставляет app.js, поэтому у него нет data-i18n. -->
+      <div id="day-picker" class="tags day-picker" role="group" aria-label="Note date" data-i18n-aria-label="noteDay.label">
+        <button class="chip" type="button" data-day-choice="today" data-i18n="day.today">Today</button>
+        <button class="chip" type="button" data-day-choice="yesterday" data-i18n="day.yesterday">Yesterday</button>
+        <span class="day-picker__custom">
+          <button id="day-custom-btn" class="chip" type="button" data-day-choice="custom"
+                  title="Choose a date" data-i18n-title="noteDay.pickTitle">Date</button>
+          <!-- Под чипом и невидимо: календарь браузера (showPicker) открывается рядом с ним. -->
+          <input id="day-input" class="day-picker__input" type="date" tabindex="-1" aria-hidden="true">
+        </span>
+      </div>
       <div class="note-form__row">
         <!-- textarea, а не input: длинная строка переносится и видна целиком. Заметка остаётся однострочной:
              Enter сохраняет, переводы строк при вставке заменяются пробелами; высота подстраивается под текст (app.js). -->

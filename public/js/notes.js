@@ -9,6 +9,10 @@ export const MAX_NOTE_LENGTH = 500;
 export const MAX_TAG_LENGTH = 32;
 
 const DAY_FILE_RE = /^day-(\d{4}-\d{2}-\d{2})\.json$/;
+const DAY_KEY_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+/** Выбор дня новой заметки в форме. TODAY/YESTERDAY пересчитываются в момент сохранения, CUSTOM — фиксированная дата. */
+export const DAY_CHOICE = Object.freeze({ TODAY: 'today', YESTERDAY: 'yesterday', CUSTOM: 'custom' });
 const DAY_FILE_PREFIX = 'day-';
 const JSON_EXT = '.json';
 
@@ -23,6 +27,26 @@ export function dayKey(date = new Date()) {
 }
 
 export const dayFileName = (day) => `${DAY_FILE_PREFIX}${day}${JSON_EXT}`;
+
+/** Ключ дня вчера относительно now (по календарю устройства, корректно через границы месяца и года). */
+export function yesterdayKey(now = new Date()) {
+  return dayKey(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1));
+}
+
+/** Строка — настоящая дата в формате YYYY-MM-DD («2024-02-30» и «2024-13-01» — нет). */
+export function isValidDayKey(day) {
+  const match = DAY_KEY_RE.exec(String(day ?? ''));
+  if (!match) return false;
+  const [y, m, d] = match.slice(1).map(Number);
+  return dayKey(new Date(y, m - 1, d)) === day;
+}
+
+/** День новой заметки по выбору в форме. Считается при сохранении: «Сегодня» после полуночи — уже новый день. */
+export function resolveNoteDay(choice, customDay, now = new Date()) {
+  if (choice === DAY_CHOICE.YESTERDAY) return yesterdayKey(now);
+  if (choice === DAY_CHOICE.CUSTOM && customDay) return customDay;
+  return dayKey(now);
+}
 
 /** Разбирает имя файла синхронизации. Возвращает null для чужих файлов. */
 export function parseFileName(name) {
@@ -61,11 +85,17 @@ export function normalizeTagName(raw) {
  */
 export const tagIdFromName = (name) => normalizeTagName(name).toLowerCase();
 
-export function createNote(text, tagIds = [], now = new Date()) {
+/**
+ * Новая заметка. day — день, в который её положить (по умолчанию сегодня); можно задним числом, но не в будущее.
+ * createdAt — всегда реальное время добавления: по нему заметка встаёт в конец своего дня и получает номер.
+ */
+export function createNote(text, tagIds = [], now = new Date(), day = dayKey(now)) {
   const clean = String(text ?? '').replace(/\s+/g, ' ').trim().slice(0, MAX_NOTE_LENGTH);
   if (!clean) throw new Error(t('error.emptyNote'));
+  if (!isValidDayKey(day)) throw new Error(t('error.badDay'));
+  if (day > dayKey(now)) throw new Error(t('error.futureDay')); // YYYY-MM-DD сравниваются как строки
   const ts = now.getTime();
-  return { id: newId(), text: clean, tags: [...new Set(tagIds)], day: dayKey(now), createdAt: ts, updatedAt: ts };
+  return { id: newId(), text: clean, tags: [...new Set(tagIds)], day, createdAt: ts, updatedAt: ts };
 }
 
 export function createTag(rawName, now = new Date()) {
